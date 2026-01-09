@@ -2,10 +2,11 @@
 import React, { useState, useRef, useCallback } from 'react'
 import Webcam from 'react-webcam'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Check, RefreshCw, Loader2 } from 'lucide-react'
+import { ArrowLeft, Camera, Check, RefreshCw, Loader2, Upload } from 'lucide-react'
 
 export default function PhotoMunim() {
     const webcamRef = useRef(null)
+    const fileInputRef = useRef(null)
     const [image, setImage] = useState(null)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState(null)
@@ -15,6 +16,18 @@ export default function PhotoMunim() {
         setImage(imageSrc)
         analyzeImage(imageSrc)
     }, [webcamRef])
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setImage(reader.result)
+                analyzeImage(reader.result)
+            }
+            reader.readAsDataURL(file)
+        }
+    }
 
     const retake = () => {
         setImage(null)
@@ -77,14 +90,35 @@ export default function PhotoMunim() {
             {!image && (
                 <div className="z-10 flex flex-col items-center gap-6 animate-in fade-in duration-500">
                     <h2 className="text-white text-2xl font-bold shadow-black drop-shadow-md">Diary ki Photo Le</h2>
-                    <button
-                        onClick={capture}
-                        className="w-64 h-64 rounded-full bg-white/20 backdrop-blur-xl border-4 border-white/50 flex items-center justify-center shadow-2xl active:scale-95 transition-transform"
-                    >
-                        <div className="w-56 h-56 rounded-full bg-white flex items-center justify-center">
-                            <Camera size={80} className="text-slate-900" />
+
+                    {/* Capture and Upload Buttons */}
+                    <div className="flex flex-col gap-4 items-center">
+                        <button
+                            onClick={capture}
+                            className="w-48 h-48 rounded-full bg-white/20 backdrop-blur-xl border-4 border-white/50 flex items-center justify-center shadow-2xl active:scale-95 transition-transform"
+                        >
+                            <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center">
+                                <Camera size={60} className="text-slate-900" />
+                            </div>
+                        </button>
+
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                                ref={fileInputRef}
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => fileInputRef.current.click()}
+                                className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold border border-white/30 hover:bg-white/30 transition shadow-lg"
+                            >
+                                <Upload size={20} /> Upload Photo
+                            </button>
                         </div>
-                    </button>
+                    </div>
+
                     <p className="text-white/80 text-sm font-medium bg-black/40 px-4 py-2 rounded-full">
                         Ensure good lighting
                     </p>
