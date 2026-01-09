@@ -2,148 +2,104 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Plus, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react'
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { ArrowLeft, Plus, Trash2, CheckCircle } from 'lucide-react'
 
-export default function KanbanPage() {
+export default function KaamKaaj() {
     const [tasks, setTasks] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [newTaskTitle, setNewTaskTitle] = useState('')
+    const [newTask, setNewTask] = useState('')
 
     useEffect(() => {
+        const fetchTasks = async () => {
+            const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false })
+            if (data) setTasks(data)
+        }
         fetchTasks()
     }, [])
 
-    const fetchTasks = async () => {
-        try {
-            setLoading(true)
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .order('created_at', { ascending: false })
-
-            if (error) {
-                // If table doesn't exist, we will handle it gracefully or init mock state
-                console.warn("Tasks table might not exist", error)
-            }
-
-            setTasks(data || [])
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     const addTask = async (e) => {
         e.preventDefault()
-        if (!newTaskTitle.trim()) return
+        if (!newTask.trim()) return
 
-        const newTask = { title: newTaskTitle, status: 'todo' }
-
-        // Optimistic update
-        setTasks([newTask, ...tasks])
-        setNewTaskTitle('')
-
-        const { error } = await supabase.from('tasks').insert([newTask])
-        if (error) {
-            console.error(error)
-            alert('Failed to add task. Make sure "tasks" table exists.')
-            fetchTasks() // revert
-        } else {
-            fetchTasks() // refresh IDs
+        const { data, error } = await supabase.from('tasks').insert([{ title: newTask, status: 'todo' }]).select()
+        if (data) {
+            setTasks([data[0], ...tasks])
+            setNewTask('')
         }
     }
 
-    const updateStatus = async (id, newStatus) => {
-        // Optimistic
-        setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t))
-
-        const { error } = await supabase
-            .from('tasks')
-            .update({ status: newStatus })
-            .eq('id', id)
-
-        if (error) console.error(error)
+    const updateStatus = async (id, status) => {
+        // Optimistic Update
+        setTasks(tasks.map(t => t.id === id ? { ...t, status } : t))
+        await supabase.from('tasks').update({ status }).eq('id', id)
     }
 
     const columns = [
-        { id: 'todo', label: 'To Do', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-50' },
-        { id: 'in_progress', label: 'In Progress', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { id: 'done', label: 'Done', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
+        { id: 'todo', title: 'Karna Hai 📝', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+        { id: 'in_progress', title: 'Chal Raha Hai ⏳', bg: 'bg-blue-50', border: 'border-blue-200' },
+        { id: 'done', title: 'Ho Gaya ✅', bg: 'bg-green-50', border: 'border-green-200' },
     ]
 
     return (
-        <main className="min-h-screen bg-white pb-24 overflow-x-hidden">
-            <header className="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-10 flex items-center justify-between">
+        <main className="min-h-screen bg-[#f3f4f6] pb-20">
+            <header className="bg-slate-900 text-white p-6 pb-6 rounded-b-3xl shadow-md sticky top-0 z-10 flex text-center justify-between items-center">
                 <div className="flex items-center gap-4">
-                    <Link href="/" className="hover:bg-slate-800 p-2 rounded-full transition">
-                        <ArrowLeft size={24} />
+                    <Link href="/" className="p-2 bg-slate-800 rounded-full hover:bg-slate-700">
+                        <ArrowLeft size={20} />
                     </Link>
-                    <h1 className="text-xl font-bold">Tasks</h1>
+                    <h1 className="text-xl font-bold">Kaam Kaaj</h1>
                 </div>
             </header>
 
-            <div className="p-4 space-y-6">
-                {/* Add Task Input */}
-                <form onSubmit={addTask} className="flex gap-2">
-                    <input
-                        type="text"
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        placeholder="Add new task..."
-                        className="flex-1 border-2 border-slate-300 rounded-lg p-3 text-lg focus:border-blue-600 outline-none"
-                    />
-                    <button type="submit" className="bg-blue-600 text-white p-3 rounded-lg font-bold">
-                        <Plus size={28} />
-                    </button>
-                </form>
+            {/* Add Task Input */}
+            <div className="p-4 bg-white m-4 rounded-xl shadow-sm border border-slate-100 flex gap-2">
+                <input
+                    type="text"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    placeholder="Naya kaam likhein..."
+                    className="flex-1 p-2 bg-transparent text-lg font-medium outline-none placeholder:text-slate-400"
+                />
+                <button
+                    onClick={addTask}
+                    className="bg-slate-900 text-white p-3 rounded-lg hover:bg-slate-800 active:scale-95 transition"
+                >
+                    <Plus size={24} />
+                </button>
+            </div>
 
-                {/* Kanban Columns */}
-                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-                    {columns.map((col) => (
-                        <div key={col.id} className={twMerge("min-w-[85vw] sm:min-w-[300px] rounded-xl p-4 border snap-center", col.bg, "border-slate-200 shadow-sm")}>
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2 border-slate-200">
-                                <col.icon className={col.color} size={20} />
-                                <h2 className="font-bold text-slate-700">{col.label}</h2>
-                                <span className="ml-auto bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-500 border">
-                                    {tasks.filter(t => t.status === col.id).length}
-                                </span>
-                            </div>
+            {/* Kanban Scrollable Area */}
+            <div className="flex gap-4 overflow-x-auto px-4 pb-8 no-scrollbar snap-x">
+                {columns.map(col => (
+                    <div key={col.id} className={`min-w-[85vw] sm:min-w-[300px] ${col.bg} p-4 rounded-2xl border-2 ${col.border} snap-center`}>
+                        <h2 className="text-lg font-bold text-slate-700 mb-4 sticky top-0">{col.title}</h2>
 
-                            <div className="space-y-3">
-                                {tasks.filter(t => t.status === col.id).map(task => (
-                                    <div key={task.id || Math.random()} className="bg-white p-3 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-3">
-                                        <p className="font-medium text-slate-800">{task.title}</p>
+                        <div className="space-y-3">
+                            {tasks.filter(t => t.status === col.id).map(task => (
+                                <div key={task.id} className="bg-white p-4 rounded-xl shadow-sm border-b-2 border-slate-100 relative group animate-in slide-in-from-bottom-2">
+                                    <p className="text-slate-800 font-medium leading-snug">{task.title}</p>
 
-                                        <div className="flex justify-end gap-2 border-t pt-2 border-slate-100">
-                                            {col.id !== 'todo' && (
-                                                <button
-                                                    onClick={() => updateStatus(task.id, col.id === 'done' ? 'in_progress' : 'todo')}
-                                                    className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded flex items-center gap-1 hover:bg-slate-200"
-                                                >
-                                                    <ArrowLeft size={12} /> Move Back
-                                                </button>
-                                            )}
-                                            {col.id !== 'done' && (
-                                                <button
-                                                    onClick={() => updateStatus(task.id, col.id === 'todo' ? 'in_progress' : 'done')}
-                                                    className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded flex items-center gap-1 hover:bg-blue-700"
-                                                >
-                                                    Next Stage <ArrowRight size={12} />
-                                                </button>
-                                            )}
-                                        </div>
+                                    <div className="mt-3 flex gap-2 justify-end">
+                                        {col.id !== 'todo' && (
+                                            <button onClick={() => updateStatus(task.id, 'todo')} className="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">
+                                                ⬅ Wap
+                                            </button>
+                                        )}
+                                        {col.id !== 'done' && (
+                                            <button onClick={() => updateStatus(task.id, col.id === 'todo' ? 'in_progress' : 'done')} className="text-xs bg-slate-900 text-white px-2 py-1 rounded hover:bg-slate-700">
+                                                Aage ➡
+                                            </button>
+                                        )}
                                     </div>
-                                ))}
-                                {tasks.filter(t => t.status === col.id).length === 0 && (
-                                    <div className="text-center py-8 text-slate-400 text-sm italic">No tasks</div>
-                                )}
-                            </div>
+                                </div>
+                            ))}
+                            {tasks.filter(t => t.status === col.id).length === 0 && (
+                                <div className="h-20 flex items-center justify-center text-slate-400 italic text-sm border-2 border-dashed border-slate-200 rounded-xl">
+                                    Khali Hai
+                                </div>
+                            )}
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
         </main>
     )
