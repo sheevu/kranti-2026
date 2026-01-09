@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import { Settings, Plus, Users, ShoppingBag, Receipt, ArrowRight, Phone } from 'lucide-react'
+
+import { Settings, Plus, Users, ShoppingBag, Receipt, ArrowRight, Phone, Bot } from 'lucide-react'
 import { BarChart, Bar, Tooltip, ResponsiveContainer } from 'recharts'
 import VoiceNav from './components/VoiceNav'
 
@@ -153,9 +154,15 @@ export default function Home() {
       </div>
 
       {/* Footer Nav / Voice Hint */}
-      <div className="text-center p-4">
+      <div className="text-center p-4 pb-24">
         <p className="text-slate-400 text-xs">Press Mic and say &quot;Naya Bill&quot; or &quot;Grahak&quot;</p>
       </div>
+
+      {/* Floating Chat Button */}
+      <Link href="/chat" className="fixed bottom-6 right-6 bg-slate-900 text-white p-4 rounded-full shadow-2xl border-4 border-slate-800 active:scale-95 transition z-40 flex items-center gap-2">
+        <Bot size={28} />
+        <span className="font-bold pr-1">Ask AI</span>
+      </Link>
     </main>
   )
 }
