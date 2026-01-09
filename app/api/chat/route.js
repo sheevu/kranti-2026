@@ -18,7 +18,7 @@ export async function POST(req) {
         }
 
         // 2. Construct Prompt
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
         const systemPrompt = `You are 'Sudarshan', a smart and friendly AI Business Assistant for a local Indian shopkeeper running a ${profileData}.
     
