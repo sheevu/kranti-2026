@@ -14,6 +14,7 @@ export default function Home() {
     // Set Date
     const date = new Date()
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+    // eslint-disable-next-line
     setCurrentDate(date.toLocaleDateString('hi-IN', options))
 
     // Fetch Business Name
