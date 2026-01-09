@@ -66,6 +66,7 @@ export default function ScanPage() {
                             className="w-full h-full object-cover"
                         />
                     ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={image} alt="Captured" className="w-full h-full object-cover" />
                     )}
                 </div>

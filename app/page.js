@@ -174,9 +174,12 @@ export default function Home() {
         </div>
 
         {/* Navigation Link to View Parties */}
-        <div className="text-center">
+        <div className="flex justify-center gap-6 mt-6">
           <Link href="/parties" className="text-blue-700 font-semibold text-lg underline p-4 inline-block">
-            View All Parties &rarr;
+            View Parties
+          </Link>
+          <Link href="/tasks" className="text-purple-700 font-semibold text-lg underline p-4 inline-block">
+            Manage Tasks
           </Link>
         </div>
       </div>
