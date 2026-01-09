@@ -18,7 +18,7 @@ export async function POST(req) {
         }
 
         // 2. Construct Prompt
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
         const systemPrompt = `You are 'Sudarshan', a smart and friendly AI Business Assistant for a local Indian shopkeeper running a ${profileData}.
     
@@ -41,6 +41,6 @@ export async function POST(req) {
         return Response.json({ text })
     } catch (error) {
         console.error(error)
-        return Response.json({ error: 'Failed to chat' }, { status: 500 })
+        return Response.json({ error: error.message || 'Failed to chat' }, { status: 500 })
     }
 }
