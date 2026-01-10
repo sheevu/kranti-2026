@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 
-import { Settings, Plus, Users, ShoppingBag, Receipt, ArrowRight, Phone, Bot } from 'lucide-react'
+import { Settings, Plus, Users, ShoppingBag, Receipt, ArrowRight, Phone, Bot, Truck } from 'lucide-react'
 import { BarChart, Bar, Tooltip, ResponsiveContainer } from 'recharts'
 import VoiceNav from './components/VoiceNav'
 
@@ -76,6 +76,12 @@ export default function Home() {
             <ShoppingBag className="text-white" size={24} />
           </div>
           <span className="text-xs font-bold text-slate-700">Inventory</span>
+        </Link>
+        <Link href="/vendors" className="flex flex-col items-center gap-2 min-w-[80px]">
+          <div className="bg-indigo-600 p-4 rounded-full shadow-lg shadow-indigo-200 active:scale-95 transition">
+            <Truck className="text-white" size={24} />
+          </div>
+          <span className="text-xs font-bold text-slate-700">Vendors</span>
         </Link>
       </div>
 

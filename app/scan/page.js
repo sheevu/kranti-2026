@@ -1,8 +1,8 @@
 'use client'
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Webcam from 'react-webcam'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Check, RefreshCw, Loader2, Upload, ShoppingBag, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Camera, Check, RefreshCw, Loader2, Upload, ShoppingBag, TrendingUp, TrendingDown, User, Tag } from 'lucide-react'
 
 export default function PhotoMunim() {
     const webcamRef = useRef(null)
@@ -11,6 +11,20 @@ export default function PhotoMunim() {
     const [image, setImage] = useState(null)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState(null)
+
+    // Phase 5: New State
+    const [selectedVendor, setSelectedVendor] = useState('')
+    const [customLabel, setCustomLabel] = useState('')
+    const [vendors, setVendors] = useState([]) // Mock list
+
+    useEffect(() => {
+        // Mock fetch vendors
+        setVendors([
+            { id: 1, name: 'Sharma Distributors' },
+            { id: 2, name: 'Metro Cash & Carry' },
+            { id: 3, name: 'Patanjali Agency' },
+        ])
+    }, [])
 
     const capture = useCallback(() => {
         const imageSrc = webcamRef.current.getScreenshot()
@@ -33,6 +47,7 @@ export default function PhotoMunim() {
     const retake = () => {
         setImage(null)
         setResult(null)
+        // Keep vendor/label selection for convenience or reset? Let's keep for now.
     }
 
     const analyzeImage = async (imgSrc) => {
@@ -47,9 +62,16 @@ export default function PhotoMunim() {
             if (data.error) throw new Error(data.error)
             setResult(data)
 
-            // Mock Saving logic
+            // Mock Saving logic with new metadata
             const reports = JSON.parse(localStorage.getItem('daily_reports') || '[]')
-            reports.push({ date: new Date().toISOString(), type: scanType, ...data })
+            const newEntry = {
+                date: new Date().toISOString(),
+                type: scanType,
+                vendor: scanType === 'PURCHASE' ? selectedVendor : null,
+                label: scanType === 'EXPENSE' ? customLabel : null,
+                ...data
+            }
+            reports.push(newEntry)
             localStorage.setItem('daily_reports', JSON.stringify(reports))
 
         } catch (error) {
@@ -64,6 +86,15 @@ export default function PhotoMunim() {
         setScanType(null)
         setImage(null)
         setResult(null)
+        setSelectedVendor('')
+        setCustomLabel('')
+    }
+
+    // Validation before capture
+    const canCapture = () => {
+        if (scanType === 'PURCHASE' && !selectedVendor) return false
+        if (scanType === 'EXPENSE' && !customLabel) return false
+        return true
     }
 
     return (
@@ -124,7 +155,7 @@ export default function PhotoMunim() {
                 </div>
             )}
 
-            {/* 2. Camera / Upload UI */}
+            {/* 2. Metadata Input (Phase 5) & Camera */}
             {scanType && !image && (
                 <>
                     <div className="absolute inset-0 z-0">
@@ -142,25 +173,69 @@ export default function PhotoMunim() {
                         <ArrowLeft size={24} />
                     </button>
 
-                    <div className="z-10 flex flex-col items-center gap-6 animate-in fade-in duration-500">
-                        <h2 className="text-white text-2xl font-bold text-center shadow-black drop-shadow-md">
+                    <div className="z-10 flex flex-col items-center gap-4 w-full px-4 animate-in fade-in duration-500">
+
+                        {/* Contextual Input Fields */}
+                        {scanType === 'PURCHASE' && (
+                            <div className="w-full max-w-sm bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 mb-2">
+                                <label className="text-white text-sm font-bold flex items-center gap-2 mb-2">
+                                    <User size={16} /> Select Vendor
+                                </label>
+                                <select
+                                    value={selectedVendor}
+                                    onChange={(e) => setSelectedVendor(e.target.value)}
+                                    className="w-full bg-white text-slate-800 p-3 rounded-lg outline-none font-medium"
+                                >
+                                    <option value="">-- Select Vyapari --</option>
+                                    {vendors.map(v => (
+                                        <option key={v.id} value={v.name}>{v.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {scanType === 'EXPENSE' && (
+                            <div className="w-full max-w-sm bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 mb-2">
+                                <label className="text-white text-sm font-bold flex items-center gap-2 mb-2">
+                                    <Tag size={16} /> Expense Label
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Ex: Chai, Rent, Electricity"
+                                    value={customLabel}
+                                    onChange={(e) => setCustomLabel(e.target.value)}
+                                    className="w-full bg-white text-slate-800 p-3 rounded-lg outline-none font-medium placeholder:text-slate-400"
+                                    list="expense-suggestions"
+                                />
+                                <datalist id="expense-suggestions">
+                                    <option value="Chai / Snacks" />
+                                    <option value="Shop Rent" />
+                                    <option value="Electricity Bill" />
+                                    <option value="Transport" />
+                                    <option value="Salary" />
+                                </datalist>
+                            </div>
+                        )}
+
+                        <h2 className="text-white text-xl font-bold text-center shadow-black drop-shadow-md">
                             {scanType === 'SALE' && 'Bikri (Sale)'}
                             {scanType === 'PURCHASE' && 'Kharid (Purchase)'}
                             {scanType === 'EXPENSE' && 'Kharcha (Expense)'}
                             <span className="block text-sm font-normal text-white/80 mt-1">ki photo lein</span>
                         </h2>
 
-                        <div className="flex flex-col gap-4 items-center">
+                        <div className={`flex flex-col gap-4 items-center ${!canCapture() ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
                             <button
                                 onClick={capture}
-                                className={`w-48 h-48 rounded-full bg-white/20 backdrop-blur-xl border-4 flex items-center justify-center shadow-2xl active:scale-95 transition-transform
+                                disabled={!canCapture()}
+                                className={`w-24 h-24 rounded-full bg-white/20 backdrop-blur-xl border-4 flex items-center justify-center shadow-2xl active:scale-95 transition-transform
                                     ${scanType === 'SALE' ? 'border-emerald-500' : ''}
                                     ${scanType === 'PURCHASE' ? 'border-blue-500' : ''}
                                     ${scanType === 'EXPENSE' ? 'border-red-500' : ''}
                                 `}
                             >
-                                <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center">
-                                    <Camera size={60} className={`
+                                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center">
+                                    <Camera size={40} className={`
                                         ${scanType === 'SALE' ? 'text-emerald-600' : ''}
                                         ${scanType === 'PURCHASE' ? 'text-blue-600' : ''}
                                         ${scanType === 'EXPENSE' ? 'text-red-600' : ''}
@@ -184,6 +259,11 @@ export default function PhotoMunim() {
                                 </button>
                             </div>
                         </div>
+                        {!canCapture() && (
+                            <p className="text-yellow-300 text-sm font-bold bg-black/50 px-4 py-2 rounded-full animate-bounce">
+                                {scanType === 'PURCHASE' ? '☝️ Pehle Vendor Select Karein' : '☝️ Pehle Label Likhein'}
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -209,7 +289,11 @@ export default function PhotoMunim() {
                             <Check size={32} />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-800">Done!</h2>
-                        <p className="text-slate-500">Analysis for {scanType}</p>
+                        <p className="text-slate-500">
+                            Analysis for {scanType}
+                            {selectedVendor && <span className="block text-xs font-bold text-blue-600">({selectedVendor})</span>}
+                            {customLabel && <span className="block text-xs font-bold text-red-600">({customLabel})</span>}
+                        </p>
                     </div>
 
                     <div className="p-6 space-y-4">
