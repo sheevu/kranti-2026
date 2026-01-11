@@ -1,46 +1,71 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import { supabase } from '@/lib/supabaseClient'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+import OpenAI from 'openai';
+import { NextResponse } from 'next/server';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const SYSTEM_PROMPT = `
+You are a bilingual (Hindi-English/Hinglish) CRM assistant for Sudarshan AI Labs.
+Your role is to understand user intents related to CRM and Accounting and return a structured JSON action.
+
+Current Date: ${new Date().toISOString().split('T')[0]}
+
+Supported Actions:
+- ADD_CUSTOMER: { customer_name, details: { phone, city } }
+- GET_BALANCE: { customer_name }
+- ADD_PAYMENT: { customer_name, amount, date }
+- GET_TOTAL_DUE: {}
+- LIST_CUSTOMERS: { filters }
+- CREATE_INVOICE: { customer_name, items: [{ name, quantity, price }] }
+- DIARY_ANALYSIS: { image_id, entries }
+- ERROR: { reason }
+
+Response Format:
+{
+  "action": "ACTION_NAME",
+  "parameters": { ... },
+  "assistant_text": "Reply in Hinglish/Hindi",
+  "error": null
+}
+
+Examples:
+User: "Gupta ji ka balance batao"
+Response: {"action": "GET_BALANCE", "parameters": {"customer_name": "Gupta ji"}, "assistant_text": "Gupta ji ka balance check kar raha hoon...", "error": null}
+
+User: "Naya customer add karo, Rahul from Lucknow, 9876543210"
+Response: {"action": "ADD_CUSTOMER", "parameters": {"customer_name": "Rahul", "details": {"city": "Lucknow", "phone": "9876543210"}}, "assistant_text": "Theek hai, Rahul (Lucknow) ko add kar raha hoon.", "error": null}
+`;
 
 export async function POST(req) {
     try {
-        const { message, history, businessContext } = await req.json()
+        const body = await req.json();
+        const { messages } = body;
 
-        // 1. Fetch Business Profile (if not provided in context, though UI should send it)
-        // For robustness, we can fetch it here if missing, but let's assume passed or fetch default
-        let profileData = "General Store"
-        if (!businessContext) {
-            const { data } = await supabase.from('business_profile').select('*').eq('id', 1).single()
-            if (data) profileData = `${data.business_category} (${data.location_type})`
-        } else {
-            profileData = businessContext
-        }
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview", // Or gpt-3.5-turbo if cost is a concern
+            messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                ...messages
+            ],
+            response_format: { type: "json_object" },
+        });
 
-        // 2. Construct Prompt
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        const responseContent = completion.choices[0].message.content;
+        const structuredResponse = JSON.parse(responseContent);
 
-        const systemPrompt = `You are 'Sudarshan', a smart and friendly AI Business Assistant for a local Indian shopkeeper running a ${profileData}.
-    
-    Your Goal: Help the shopkeeper increase sales, manage udhaar (credit), and reduce expenses.
-    Language: Mix of Hindi and English (Hinglish) - simple, encouraging, and respectful. Use emojis occasionally.
-    
-    Context:
-    - User is asking: "${message}"
-    - Previous conversation: ${JSON.stringify(history || [])}
-    
-    If the user asks for "Insights" or "Summary", provide a brief bulleted list of 3 actionable tips based on general retail best practices for their shop type.
-    
-    Keep responses short (under 50 words) unless asked for detaied advice.
-    `
-
-        const result = await model.generateContent(systemPrompt)
-        const response = await result.response
-        const text = response.text()
-
-        return Response.json({ text })
+        return NextResponse.json(structuredResponse);
     } catch (error) {
-        console.error(error)
-        return Response.json({ error: error.message || 'Failed to chat' }, { status: 500 })
+        console.error('AI API Error:', error);
+        return NextResponse.json(
+            {
+                action: "ERROR",
+                parameters: { reason: error.message },
+                assistant_text: "Kuch gadbad ho gayi server par.",
+                error: error.message
+            },
+            { status: 500 }
+        );
     }
 }

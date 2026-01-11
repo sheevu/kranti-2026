@@ -1,174 +1,119 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import Link from 'next/link'
+import ChatInterface from "./components/ChatInterface";
+import { Users, CreditCard, Banknote, ArrowUpRight } from "lucide-react";
 
-import { Settings, Plus, Users, ShoppingBag, Receipt, ArrowRight, Phone, Bot, Truck } from 'lucide-react'
-import { BarChart, Bar, Tooltip, ResponsiveContainer } from 'recharts'
-import VoiceNav from './components/VoiceNav'
+async function getStats() {
+    // In a real app, fetch these from Supabase server-side
+    // For now, static placeholders or client-fetching logic is simplified
+    return {
+        totalDue: 45000,
+        todayCollection: 12500,
+        activeCustomers: 124
+    };
+}
 
-export default function Home() {
-  const [businessName, setBusinessName] = useState('My Dukaan')
-  const [currentDate, setCurrentDate] = useState('')
+export default async function Home() {
+    const stats = await getStats();
 
-  useEffect(() => {
-    // Set Date
-    const date = new Date()
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    // eslint-disable-next-line
-    setCurrentDate(date.toLocaleDateString('hi-IN', options))
-
-    // Fetch Business Name
-    const fetchProfile = async () => {
-      const { data } = await supabase.from('business_profile').select('business_category').eq('id', 1).single()
-      if (data?.business_category) {
-        setBusinessName(`${data.business_category} Store`)
-      }
-    }
-    fetchProfile()
-  }, [])
-
-  // Mock Data for Phase 1 (Will be dynamic in Phase 2/3)
-  const metrics = [
-    { title: 'Aaj ki Bikri', value: '₹12,450', color: 'border-emerald-600', text: 'text-emerald-700' },
-    { title: 'Aaj ka Kharcha', value: '₹3,200', color: 'border-red-600', text: 'text-red-700' },
-    { title: 'Udhaar Baaki', value: '₹8,500', color: 'border-orange-500', text: 'text-orange-700' },
-    { title: 'Net Munafa', value: '₹9,250', color: 'border-blue-600', text: 'text-blue-700' },
-  ]
-
-  return (
-    <main className="min-h-screen bg-[#f3f4f6] pb-24 font-sans">
-      {/* Header */}
-      <header className="bg-white p-6 pb-4 rounded-b-2xl shadow-sm sticky top-0 z-50">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-slate-500 text-sm font-medium mb-1">{currentDate}</p>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Namaste, {businessName} 🙏</h1>
-          </div>
-          <Link href="/settings" className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition">
-            <Settings className="text-slate-600" size={24} />
-          </Link>
-        </div>
-      </header>
-
-      {/* Quick Actions (Floating Row) */}
-      <div className="flex justify-evenly gap-4 px-4 -mt-0 py-6 overflow-x-auto no-scrollbar">
-        <Link href="/invoices/new" className="flex flex-col items-center gap-2 min-w-[80px]">
-          <div className="bg-blue-600 p-4 rounded-full shadow-lg shadow-blue-200 active:scale-95 transition">
-            <Receipt className="text-white" size={24} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">New Bill</span>
-        </Link>
-        <Link href="/scan" className="flex flex-col items-center gap-2 min-w-[80px]">
-          <div className="bg-emerald-600 p-4 rounded-full shadow-lg shadow-emerald-200 active:scale-95 transition">
-            <Plus className="text-white" size={24} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">Scan Diary</span>
-        </Link>
-        <Link href="/customers" className="flex flex-col items-center gap-2 min-w-[80px]">
-          <div className="bg-purple-600 p-4 rounded-full shadow-lg shadow-purple-200 active:scale-95 transition">
-            <Users className="text-white" size={24} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">Customers</span>
-        </Link>
-        <Link href="/products" className="flex flex-col items-center gap-2 min-w-[80px]">
-          <div className="bg-orange-600 p-4 rounded-full shadow-lg shadow-orange-200 active:scale-95 transition">
-            <ShoppingBag className="text-white" size={24} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">Inventory</span>
-        </Link>
-        <Link href="/vendors" className="flex flex-col items-center gap-2 min-w-[80px]">
-          <div className="bg-indigo-600 p-4 rounded-full shadow-lg shadow-indigo-200 active:scale-95 transition">
-            <Truck className="text-white" size={24} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">Vendors</span>
-        </Link>
-      </div>
-
-      {/* Metrics Grid */}
-      <div className="px-4 grid grid-cols-2 gap-4 mb-8">
-        {metrics.map((m, idx) => (
-          <div key={idx} className={`bg-white p-5 rounded-xl shadow-sm border-t-4 ${m.color} flex flex-col justify-between h-32`}>
-            <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider">{m.title}</p>
-            <p className={`text-3xl font-bold ${m.text}`}>{m.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Visual Analytics & Tips Section */}
-      <div className="px-4 space-y-6 mb-8">
-
-        {/* Weekly Chart */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-800">Hafte ka Hisaab 📊</h2>
-            <select className="bg-slate-50 border-none text-xs font-bold text-slate-500 rounded p-1">
-              <option>Last 7 Days</option>
-            </select>
-          </div>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[
-                { name: 'Som', sale: 4000, expense: 2400 },
-                { name: 'Mangal', sale: 3000, expense: 1398 },
-                { name: 'Budh', sale: 2000, expense: 9800 },
-                { name: 'Guru', sale: 2780, expense: 3908 },
-                { name: 'Shukr', sale: 1890, expense: 4800 },
-                { name: 'Shani', sale: 2390, expense: 3800 },
-                { name: 'Ravi', sale: 3490, expense: 4300 },
-              ]}>
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  cursor={{ fill: '#f1f5f9' }}
-                />
-                <Bar dataKey="sale" fill="#059669" radius={[4, 4, 0, 0]} barSize={10} />
-                <Bar dataKey="expense" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={10} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Action Points Widget */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-yellow-400">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            Aaj ke liye Salah 💡
-          </h2>
-          <ul className="space-y-3">
-            {[
-              "Call Gupta ji for payment (₹5000 due)",
-              "Order more Aashirvaad Atta (Low Stock)",
-              "Send WhatsApp Greeting to new customers"
-            ].map((tip, i) => (
-              <li key={i} className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
-                <div className="mt-1 min-w-[16px]">
-                  <div className="w-4 h-4 rounded border-2 border-yellow-600 flex items-center justify-center">
-                    {/* Checkbox simulation */}
-                  </div>
+    return (
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                        Sudarshan AI Labs
+                    </h1>
+                    <p className="text-white/60 mt-1">CRM & Accounting Assistant</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-slate-700 text-sm font-medium">{tip}</p>
+                <div className="flex gap-4">
+                    {/* User Profile / Settings placeholder */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-red-500 border-2 border-white/20" />
                 </div>
-                {tip.includes("Call") && (
-                  <button className="bg-green-100 text-green-700 p-2 rounded-full hover:bg-green-200">
-                    <Phone size={16} />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-card p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Banknote className="w-24 h-24 text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-white/60 text-sm font-medium">Total Due (Market)</p>
+                        <h3 className="text-3xl font-bold mt-2 text-white">₹{stats.totalDue.toLocaleString()}</h3>
+                        <div className="mt-4 flex items-center text-red-400 text-sm">
+                            <ArrowUpRight className="w-4 h-4 mr-1" />
+                            <span>Pending Collection</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-card p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <CreditCard className="w-24 h-24 text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-white/60 text-sm font-medium">Today's Collection</p>
+                        <h3 className="text-3xl font-bold mt-2 text-white">₹{stats.todayCollection.toLocaleString()}</h3>
+                        <div className="mt-4 flex items-center text-green-400 text-sm">
+                            <ArrowUpRight className="w-4 h-4 mr-1" />
+                            <span>+12% from yesterday</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-card p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Users className="w-24 h-24 text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-white/60 text-sm font-medium">Active Customers</p>
+                        <h3 className="text-3xl font-bold mt-2 text-white">{stats.activeCustomers}</h3>
+                        <div className="mt-4 flex items-center text-blue-400 text-sm">
+                            <span>Lucknow Region</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area: Chat & Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left: Chat Interface */}
+                <div className="lg:col-span-2">
+                    <ChatInterface />
+                </div>
+
+                {/* Right: Quick Actions / Recent Activity */}
+                <div className="glass-card p-6 h-fit">
+                    <h3 className="text-xl font-semibold mb-4 text-white">Quick Actions</h3>
+                    <div className="space-y-3">
+                        <button className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-xl text-left transition-colors flex items-center gap-3 border border-white/5">
+                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><Users className="w-4 h-4" /></div>
+                            <span>Add New Customer</span>
+                        </button>
+                        <button className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-xl text-left transition-colors flex items-center gap-3 border border-white/5">
+                            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400"><Banknote className="w-4 h-4" /></div>
+                            <span>Create Invoice</span>
+                        </button>
+                        <button className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-xl text-left transition-colors flex items-center gap-3 border border-white/5">
+                            <div className="p-2 bg-green-500/20 rounded-lg text-green-400"><CreditCard className="w-4 h-4" /></div>
+                            <span>Record Payment</span>
+                        </button>
+                    </div>
+
+                    <div className="mt-8">
+                        <h3 className="text-xl font-semibold mb-4 text-white">Recent Activity</h3>
+                        <div className="space-y-4 text-sm text-white/70">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                <span>Payment from <strong>Rahul</strong></span>
+                                <span className="text-green-400">+₹500</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                <span>Invoice to <strong>Gupta Store</strong></span>
+                                <span className="text-white/40">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-
-      {/* Footer Nav / Voice Hint */}
-      <div className="text-center p-4 pb-24">
-        <p className="text-slate-400 text-xs">Press Mic and say &quot;Naya Bill&quot; or &quot;Grahak&quot;</p>
-      </div>
-
-      {/* Floating Chat Button */}
-      <Link href="/chat" className="fixed bottom-6 right-6 bg-slate-900 text-white p-4 rounded-full shadow-2xl border-4 border-slate-800 active:scale-95 transition z-40 flex items-center gap-2">
-        <Bot size={28} />
-        <span className="font-bold pr-1">Ask AI</span>
-      </Link>
-    </main>
-  )
+    );
 }
